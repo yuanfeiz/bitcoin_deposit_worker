@@ -5,6 +5,8 @@ import gevent
 import requests
 from gevent.queue import Queue
 
+from persistence import FilePersistent
+
 s = requests.Session()
 
 base_url = 'https://chain.api.btc.com/v3'
@@ -42,6 +44,16 @@ def generate_block_transaction_urls(block_height):
         gevent.sleep(.5)
 
 
+def process_transaction(transaction):
+    outputs = transaction['outputs']
+
+    for output in outputs:
+        if output['spent_by_tx']:
+            pprint('output is spent, skip')
+        else:
+            pprint({"addresses": output["addresses"], "value": output["value"]})
+
+
 def worker(n):
     while not tasks.empty():
         url = tasks.get()
@@ -62,26 +74,31 @@ def worker(n):
 
         transactions = data['list']
         for transaction in transactions:
-            pprint(transaction['outputs'])
+            process_transaction(transaction)
 
         gevent.sleep(.5)
 
 
-block = get_block()
-pprint(block)
+if __name__ == '__main__':
+    # Persistent is for saving and loading the progress, the data can be saved in a local file or the database
+    persistent = FilePersistent()
 
-MIN_CONFIRMATIONS = 6
+    # Pick up the progress
+    current_block = persistent.get_last_processed_block() + 1
 
-latest_block_height = block['height']
+    # Main event loop
+    while True:
+        block = get_block(current_block)
+        pprint(block)
 
-til_block_height = latest_block_height - MIN_CONFIRMATIONS
+        # TODO: make it configurable
+        MIN_CONFIRMATIONS = 6
 
-sleep(.5)
+        latest_block_height = block['height']
 
-w = gevent.spawn(generate_block_transaction_urls, til_block_height).join()
+        til_block_height = latest_block_height - MIN_CONFIRMATIONS
 
-gevent.joinall([
-    gevent.spawn(worker, 'steve'),
-    gevent.spawn(worker, 'john'),
-    gevent.spawn(worker, 'nancy'),
-])
+        sleep(.5)
+
+        gevent.spawn(generate_block_transaction_urls, til_block_height).join()
+        gevent.spawn(worker, 'steve').join()
