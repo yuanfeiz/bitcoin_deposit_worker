@@ -78,7 +78,7 @@ class BitcoinDepositService(object):
             else:
                 logger.info('%s|a:%s|v:%d', transaction['block_height'], output['addresses'], output['value'])
 
-    def worker(self, n):
+    def worker(self):
         while not self.tasks.empty():
             url = self.tasks.get()
             rv = self.session.get(url)
@@ -111,24 +111,16 @@ class BitcoinDepositService(object):
         while True:
             try:
                 block = self.get_block(block_height)
-                pprint(block)
 
-                sleep(.5)
-
-                latest_block = self.get_block()
-                pprint(latest_block)
-
-                # TODO: define a block class to abstract the dict
-                block_height = block['height']
-                latest_block_height = latest_block['height']
-
-                if latest_block_height - min_confirmation_count < block_height:
-                    raise WorkerConfirmException('Confirmation is less than required minimum: %d', min_confirmation_count)
+                if block['confirmations'] < min_confirmation_count:
+                    raise WorkerConfirmException(
+                        'Confirmation is less than required minimum: %d',
+                        min_confirmation_count)
 
                 sleep(.5)
 
                 gevent.spawn(self.generate_block_transaction_urls, block_height).join()
-                gevent.spawn(self.worker, 'steve').join()
+                gevent.spawn(self.worker).join()
 
                 # Save the checkpoint
                 self.persistent.set_last_processed_block(block_height)
