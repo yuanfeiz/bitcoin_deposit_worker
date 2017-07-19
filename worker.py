@@ -1,13 +1,21 @@
 from configparser import RawConfigParser
+from logging import Logger
 from pprint import pprint
 from time import sleep
 
 import gevent
+import logging
 import requests
 from gevent.queue import Queue
 
 from persistence import FilePersistent
 from worker_confirm_exception import WorkerConfirmException
+
+logger = logging.getLogger('bitcoin_deposit_service')
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler())
+
+logger.info('hello, world')
 
 
 class BitcoinDepositService(object):
@@ -51,8 +59,6 @@ class BitcoinDepositService(object):
         rv = self.session.get(url)
         data = rv.json()['data']
 
-        transactions = data['list']
-        page = data['page']
         page_size = data['pagesize']
         total_count = data['total_count']
 
@@ -68,9 +74,9 @@ class BitcoinDepositService(object):
 
         for output in outputs:
             if output['spent_by_tx']:
-                pprint('Output is spent, skip')
+                logger.info('%s|spent', transaction['block_height'])
             else:
-                pprint({"addresses": output["addresses"], "value": output["value"]})
+                logger.info('%s|a:%s|v:%d', transaction['block_height'], output['addresses'], output['value'])
 
     def worker(self, n):
         while not self.tasks.empty():
@@ -126,6 +132,9 @@ class BitcoinDepositService(object):
 
                 # Save the checkpoint
                 self.persistent.set_last_processed_block(block_height)
+
+                # increase block height
+                block_height += 1
             except WorkerConfirmException as e:
                 pprint(e)
                 sleep(self.config.getfloat('deposit', 'block_times'))
