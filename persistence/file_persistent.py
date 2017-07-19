@@ -1,3 +1,5 @@
+import os
+
 from persistence.progress_persistent import ProgressPersistent
 
 
@@ -20,6 +22,6 @@ class FilePersistent(ProgressPersistent):
             return int(f.read())
 
     def set_last_processed_block(self, last_processed_block):
-        with open(self.path, 'w') as f:
-            f.write(last_processed_block)
+        with open(self.path, 'w+') as f:
+            f.write(str(last_processed_block))
             f.truncate()

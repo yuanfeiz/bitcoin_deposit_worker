@@ -7,6 +7,7 @@ import requests
 from gevent.queue import Queue
 
 from persistence import FilePersistent
+from worker_confirm_exception import WorkerConfirmException
 
 
 class BitcoinDepositService(object):
@@ -23,7 +24,7 @@ class BitcoinDepositService(object):
         # Persistent is for saving and loading the progress,
         # the data can be saved in a local file or the database
         self.persistent = \
-            _persistent or FilePersistent(None, self.config.getint('deposit', 'start_block'))
+            _persistent or FilePersistent(_start=self.config.getint('deposit', 'start_block'))
 
         # TODO: extract transaction fetcher
         self.base_url = self.config.get('deposit', 'base_url')
@@ -104,10 +105,12 @@ class BitcoinDepositService(object):
         while True:
             try:
                 block = self.get_block(block_height)
+                pprint(block)
 
                 sleep(.5)
 
                 latest_block = self.get_block()
+                pprint(latest_block)
 
                 # TODO: define a block class to abstract the dict
                 block_height = block['height']
@@ -115,14 +118,17 @@ class BitcoinDepositService(object):
 
                 if latest_block_height - min_confirmation_count < block_height:
                     # TODO: define a more specific error class
-                    raise Exception('Confirmation is less than required minimum: %d', min_confirmation_count)
+                    raise WorkerConfirmException('Confirmation is less than required minimum: %d', min_confirmation_count)
+
+                sleep(.5)
 
                 gevent.spawn(self.generate_block_transaction_urls, block_height).join()
                 gevent.spawn(self.worker, 'steve').join()
 
                 # Save the checkpoint
                 self.persistent.set_last_processed_block(block_height)
-            except Exception as e:
+            except WorkerConfirmException as e:
+                pprint(e)
                 # TODO: capture the aforementioned error class
                 sleep(self.config.getfloat('deposit', 'block_times'))
 
