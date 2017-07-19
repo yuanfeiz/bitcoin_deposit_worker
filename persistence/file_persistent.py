@@ -17,5 +17,5 @@ class FilePersistent(ProgressPersistent):
     def get_last_processed_block(self):
         pass
 
-    def set_last_processed_block(self):
+    def set_last_processed_block(self, last_processed_block):
         pass

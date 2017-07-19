@@ -1,3 +1,4 @@
+from configparser import RawConfigParser
 from pprint import pprint
 from time import sleep
 
@@ -6,6 +7,7 @@ import requests
 from gevent.queue import Queue
 
 from persistence import FilePersistent
+
 
 s = requests.Session()
 
@@ -49,7 +51,7 @@ def process_transaction(transaction):
 
     for output in outputs:
         if output['spent_by_tx']:
-            pprint('output is spent, skip')
+            pprint('Output is spent, skip')
         else:
             pprint({"addresses": output["addresses"], "value": output["value"]})
 
@@ -78,27 +80,36 @@ def worker(n):
 
         gevent.sleep(.5)
 
-
 if __name__ == '__main__':
     # Persistent is for saving and loading the progress, the data can be saved in a local file or the database
     persistent = FilePersistent()
 
     # Pick up the progress
-    current_block = persistent.get_last_processed_block() + 1
+    block_height = persistent.get_last_processed_block() + 1
+
+    config = RawConfigParser()
+    config.read('worker.cfg')
+
+    MIN_CONFIRMATION_COUNT = config.getint('deposit', 'min_confirmation_count')
 
     # Main event loop
     while True:
-        block = get_block(current_block)
-        pprint(block)
+        try:
+            block = get_block(block_height)
 
-        # TODO: make it configurable
-        MIN_CONFIRMATIONS = 6
+            sleep(.5)
 
-        latest_block_height = block['height']
+            latest_block = get_block()
 
-        til_block_height = latest_block_height - MIN_CONFIRMATIONS
+            if latest_block['height'] - MIN_CONFIRMATION_COUNT < block['height']:
+                # TODO: define a more specific error class
+                raise Exception('Confirmation is less than required minimum: %d', MIN_CONFIRMATION_COUNT)
 
-        sleep(.5)
+            gevent.spawn(generate_block_transaction_urls, ).join()
+            gevent.spawn(worker, 'steve').join()
 
-        gevent.spawn(generate_block_transaction_urls, til_block_height).join()
-        gevent.spawn(worker, 'steve').join()
+            # Commit the changes
+            persistent.set_last_processed_block()
+        except Exception as e:
+            # TODO: capture the aforementioned error class
+            sleep(config.getfloat('deposit', 'block_times'))
