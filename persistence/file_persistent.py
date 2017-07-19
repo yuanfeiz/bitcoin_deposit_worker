@@ -6,18 +6,20 @@ class FilePersistent(ProgressPersistent):
     Using file to persistent the last processed block
     """
 
-    def __init__(self, path="bitcoin_deposit_worker.dat"):
-        self.path = path
-        self.file = open(self.path, 'w')
-
-    def close(self):
-        self.file.flush()
-        self.file.close()
+    def __init__(self, _path="bitcoin_deposit_worker.dat", _start=None):
+        self.path = _path
+        self.start = _start
 
     def get_last_processed_block(self):
-        return int(self.file.read())
+        # `start` takes the priority
+        if self.start is not None:
+            return self.start
 
+        # If `start` is not specified, the block height saved in the data file is returned
+        with open(self.path, 'r') as f:
+            return int(f.read())
 
     def set_last_processed_block(self, last_processed_block):
-        self.file.write(last_processed_block)
-        self.file.flush()
+        with open(self.path, 'w') as f:
+            f.write(last_processed_block)
+            f.truncate()

@@ -10,23 +10,24 @@ from persistence import FilePersistent
 
 
 class BitcoinDepositService(object):
-    def __init__(self, _config=None, _persistent=None, _base_url='https://chain.api.btc.com/v3'):
+    def __init__(self, _config=None, _persistent=None):
         self.tasks = Queue()
-
-        # Persistent is for saving and loading the progress,
-        # the data can be saved in a local file or the database
-        self.persistent = _persistent or FilePersistent()
-
-        # TODO: extract transaction fetcher
-        self.base_url = _base_url
-        self.session = requests.Session()
 
         if _config:
             self.config = _config
         else:
             _config = RawConfigParser()
-            _config.read('bitcoin_deposit_worker.dat')
+            _config.read('config.cfg')
             self.config = _config
+
+        # Persistent is for saving and loading the progress,
+        # the data can be saved in a local file or the database
+        self.persistent = \
+            _persistent or FilePersistent(None, self.config.getint('deposit', 'start_block'))
+
+        # TODO: extract transaction fetcher
+        self.base_url = self.config.get('deposit', 'base_url')
+        self.session = requests.Session()
 
     def get_block(self, block_height='latest'):
         """
@@ -95,7 +96,7 @@ class BitcoinDepositService(object):
     def run(self):
 
         # Pick up the progress
-        block_height = self.persistent.get_last_processed_block + 1
+        block_height = self.persistent.get_last_processed_block() + 1
 
         min_confirmation_count = self.config.getint('deposit', 'min_confirmation_count')
 
