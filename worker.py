@@ -15,8 +15,6 @@ logger = logging.getLogger('bitcoin_deposit_service')
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler())
 
-logger.info('hello, world')
-
 
 class BitcoinDepositService(object):
     def __init__(self, _config=None, _persistent=None):
@@ -111,6 +109,7 @@ class BitcoinDepositService(object):
         while True:
             try:
                 block = self.get_block(block_height)
+                logger.info('New block: %d', block_height)
 
                 if block['confirmations'] < min_confirmation_count:
                     raise WorkerConfirmException(
