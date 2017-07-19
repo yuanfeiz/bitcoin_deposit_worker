@@ -101,3 +101,6 @@ ENV/
 .mypy_cache/
 
 .idea/
+
+# Application generated data
+bitcoin_deposit_worker.dat

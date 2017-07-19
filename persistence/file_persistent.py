@@ -8,14 +8,16 @@ class FilePersistent(ProgressPersistent):
 
     def __init__(self, path="bitcoin_deposit_worker.dat"):
         self.path = path
-        self.file = open(self.path, 'wr')
+        self.file = open(self.path, 'w')
 
     def close(self):
         self.file.flush()
         self.file.close()
 
     def get_last_processed_block(self):
-        pass
+        return int(self.file.read())
+
 
     def set_last_processed_block(self, last_processed_block):
-        pass
+        self.file.write(last_processed_block)
+        self.file.flush()

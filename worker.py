@@ -10,7 +10,7 @@ from persistence import FilePersistent
 
 
 class BitcoinDepositService(object):
-    def __init__(self, _persistent=None, _base_url='https://chain.api.btc.com/v3'):
+    def __init__(self, _config=None, _persistent=None, _base_url='https://chain.api.btc.com/v3'):
         self.tasks = Queue()
 
         # Persistent is for saving and loading the progress,
@@ -19,8 +19,14 @@ class BitcoinDepositService(object):
 
         # TODO: extract transaction fetcher
         self.base_url = _base_url
-
         self.session = requests.Session()
+
+        if _config:
+            self.config = _config
+        else:
+            _config = RawConfigParser()
+            _config.read('bitcoin_deposit_worker.dat')
+            self.config = _config
 
     def get_block(self, block_height='latest'):
         """
@@ -89,12 +95,9 @@ class BitcoinDepositService(object):
     def run(self):
 
         # Pick up the progress
-        block_height = self.persistent.get_last_processed_block() + 1
+        block_height = self.persistent.get_last_processed_block + 1
 
-        config = RawConfigParser()
-        config.read('worker.cfg')
-
-        MIN_CONFIRMATION_COUNT = config.getint('deposit', 'min_confirmation_count')
+        min_confirmation_count = self.config.getint('deposit', 'min_confirmation_count')
 
         # Main event loop
         while True:
@@ -109,9 +112,9 @@ class BitcoinDepositService(object):
                 block_height = block['height']
                 latest_block_height = latest_block['height']
 
-                if latest_block_height - MIN_CONFIRMATION_COUNT < block_height:
+                if latest_block_height - min_confirmation_count < block_height:
                     # TODO: define a more specific error class
-                    raise Exception('Confirmation is less than required minimum: %d', MIN_CONFIRMATION_COUNT)
+                    raise Exception('Confirmation is less than required minimum: %d', min_confirmation_count)
 
                 gevent.spawn(self.generate_block_transaction_urls, block_height).join()
                 gevent.spawn(self.worker, 'steve').join()
@@ -120,7 +123,7 @@ class BitcoinDepositService(object):
                 self.persistent.set_last_processed_block(block_height)
             except Exception as e:
                 # TODO: capture the aforementioned error class
-                sleep(config.getfloat('deposit', 'block_times'))
+                sleep(self.config.getfloat('deposit', 'block_times'))
 
 
 if __name__ == '__main__':
