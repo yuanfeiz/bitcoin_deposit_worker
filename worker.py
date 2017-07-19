@@ -117,7 +117,6 @@ class BitcoinDepositService(object):
                 latest_block_height = latest_block['height']
 
                 if latest_block_height - min_confirmation_count < block_height:
-                    # TODO: define a more specific error class
                     raise WorkerConfirmException('Confirmation is less than required minimum: %d', min_confirmation_count)
 
                 sleep(.5)
@@ -129,7 +128,6 @@ class BitcoinDepositService(object):
                 self.persistent.set_last_processed_block(block_height)
             except WorkerConfirmException as e:
                 pprint(e)
-                # TODO: capture the aforementioned error class
                 sleep(self.config.getfloat('deposit', 'block_times'))
 
 
