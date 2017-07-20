@@ -151,6 +151,13 @@ class BitcoinDepositService(object):
 
 
 if __name__ == '__main__':
+
+    class BalanceService(object):
+        def deposit(self, address, value, tx_id):
+            logger.info('deposit %s to %s at %s', value, address, tx_id)
+
+
+    balance_service = BalanceService()
     watchlist = DummyWatchlist()
-    srv = BitcoinDepositService(_watchlist=watchlist)
+    srv = BitcoinDepositService(_watchlist=watchlist, _balance_service=balance_service)
     srv.run()
