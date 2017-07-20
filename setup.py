@@ -1,9 +1,11 @@
 from distutils.core import setup
 
+from setuptools import find_packages
+
 setup(
   name='bitcoin_deposit_worker',
-  packages=['bitcoin_deposit_worker'], # this must be the same as the name above
-  version='0.1.1',
+  packages=find_packages(), # this must be the same as the name above
+  version='0.3',
   description='A random test lib',
   author='Yuanfei ZHu',
   author_email='hi@yuanfeiz.cn',

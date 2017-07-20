@@ -83,6 +83,10 @@ class BitcoinDepositService(object):
                     logger.error('more than one output addresses')
                     continue
 
+                if len(output['addresses']) == 0:
+                    logger.error('no address found')
+                    continue
+
                 address = output['addresses'][0]
                 value = output['value']
 
