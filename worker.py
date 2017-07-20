@@ -1,5 +1,4 @@
 from configparser import RawConfigParser
-from logging import Logger
 from pprint import pprint
 from time import sleep
 
@@ -7,8 +6,8 @@ import gevent
 import logging
 import requests
 from gevent.queue import Queue
-
 from persistence import FilePersistent
+from watchlist import DummyWatchlist
 from worker_confirm_exception import WorkerConfirmException
 
 logger = logging.getLogger('bitcoin_deposit_service')
@@ -17,7 +16,7 @@ logger.addHandler(logging.StreamHandler())
 
 
 class BitcoinDepositService(object):
-    def __init__(self, _config=None, _persistent=None):
+    def __init__(self, _config=None, _persistent=None, _watchlist=None, _balance_service=None):
         self.tasks = Queue()
 
         if _config:
@@ -35,6 +34,9 @@ class BitcoinDepositService(object):
         # TODO: extract transaction fetcher
         self.base_url = self.config.get('deposit', 'base_url')
         self.session = requests.Session()
+
+        self.watchlist = _watchlist
+        self.balance_service = _balance_service
 
     def get_block(self, block_height='latest'):
         """
@@ -75,6 +77,20 @@ class BitcoinDepositService(object):
                 logger.info('%s|spent', transaction['block_height'])
             else:
                 logger.info('%s|a:%s|v:%d', transaction['block_height'], output['addresses'], output['value'])
+
+                if len(output['addresses']) > 1:
+                    logger.error('more than one output addresses')
+                    continue
+
+                address = output['addresses'][0]
+                value = output['value']
+
+                if self.watchlist.exists(address):
+                    try:
+                        self.deposit(address, value)
+                        logger.info('deposit %s to %s: OK', value, address)
+                    except:
+                        logger.error('deposit %s to %s: failed', value, address)
 
     def worker(self):
         while not self.tasks.empty():
@@ -130,7 +146,11 @@ class BitcoinDepositService(object):
                 pprint(e)
                 sleep(self.config.getfloat('deposit', 'block_times'))
 
+    def deposit(self, address, value, tx_id):
+        self.balance_service.deposit(address, value, tx_id)
+
 
 if __name__ == '__main__':
-    srv = BitcoinDepositService()
+    watchlist = DummyWatchlist()
+    srv = BitcoinDepositService(_watchlist=watchlist)
     srv.run()
