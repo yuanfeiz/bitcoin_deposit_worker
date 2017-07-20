@@ -1,14 +1,15 @@
+import logging
 from configparser import RawConfigParser
 from pprint import pprint
 from time import sleep
 
 import gevent
-import logging
 import requests
 from gevent.queue import Queue
-from persistence import FilePersistent
 from watchlist import DummyWatchlist
-from worker_confirm_exception import WorkerConfirmException
+
+from bitcoin_deposit_worker.persistence import FilePersistent
+from bitcoin_deposit_worker.worker_confirm_exception import WorkerConfirmException
 
 logger = logging.getLogger('bitcoin_deposit_service')
 logger.setLevel(logging.DEBUG)

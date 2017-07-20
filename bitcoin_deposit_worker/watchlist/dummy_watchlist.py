@@ -1,4 +1,4 @@
-from watchlist import Watchlist
+from bitcoin_deposit_worker.watchlist import Watchlist
 
 
 class DummyWatchlist(Watchlist):

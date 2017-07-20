@@ -1,6 +1,4 @@
-import os
-
-from persistence.progress_persistent import ProgressPersistent
+from bitcoin_deposit_worker.persistence.progress_persistent import ProgressPersistent
 
 
 class FilePersistent(ProgressPersistent):
