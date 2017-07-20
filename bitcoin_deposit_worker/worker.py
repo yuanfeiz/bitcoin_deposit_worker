@@ -6,9 +6,9 @@ from time import sleep
 import gevent
 import requests
 from gevent.queue import Queue
-from watchlist import DummyWatchlist
 
 from bitcoin_deposit_worker.persistence import FilePersistent
+from bitcoin_deposit_worker.watchlist import DummyWatchlist
 from bitcoin_deposit_worker.worker_confirm_exception import WorkerConfirmException
 
 logger = logging.getLogger('bitcoin_deposit_service')
