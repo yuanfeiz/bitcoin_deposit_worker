@@ -5,7 +5,7 @@ from setuptools import find_packages
 setup(
   name='bitcoin_deposit_worker',
   packages=find_packages(), # this must be the same as the name above
-  version='0.4.1',
+  version='0.4.2',
   description='A random test lib',
   author='Yuanfei Zuu',
   author_email='hi@yuanfeiz.cn',

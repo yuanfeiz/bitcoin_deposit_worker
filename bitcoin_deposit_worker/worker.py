@@ -89,10 +89,11 @@ class BitcoinDepositService(object):
 
                 address = output['addresses'][0]
                 value = output['value']
+                tx_id = transaction['hash']
 
                 if self.watchlist.exists(address):
                     try:
-                        self.deposit(address, value)
+                        self.deposit(address, value, tx_id)
                         logger.info('deposit %s to %s: OK', value, address)
                     except:
                         logger.error('deposit %s to %s: failed', value, address)
